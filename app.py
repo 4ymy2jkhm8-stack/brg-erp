@@ -99,7 +99,6 @@ st.markdown("""
         border-radius: 12px;
         padding: 20px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        transition: transform 0.2s ease;
     }
     .kpi-num {
         font-size: 32px;
@@ -224,9 +223,9 @@ if st.session_state.current_view == "dashboard":
     st.markdown("<br>", unsafe_allow_html=True)
     st.text_input("Search companies / Firma ara", placeholder="Company or country / Firma adı veya ülke", label_visibility="collapsed")
 
-    # Müşteri Kartı
+    # Müşteri Kartı (Hata Taraması Eklendi: .get())
     for cust in db["customers"]:
-        avatar_text = cust["name"][:2].upper()
+        avatar_text = cust.get("name", "CU")[:2].upper()
         
         st.markdown(f"""
         <div class="cust-card">
@@ -234,8 +233,8 @@ if st.session_state.current_view == "dashboard":
                 <div style="display: flex; align-items: center; gap: 16px;">
                     <div class="avatar-box">{avatar_text}</div>
                     <div>
-                        <div style="font-size: 18px; font-weight: 700; color: #0f172a;">{cust['name']}</div>
-                        <div style="font-size: 13px; color: #64748b; font-weight: 500;">{cust['country']}</div>
+                        <div style="font-size: 18px; font-weight: 700; color: #0f172a;">{cust.get('name', 'Bilinmeyen Müşteri')}</div>
+                        <div style="font-size: 13px; color: #64748b; font-weight: 500;">{cust.get('country', '-')}</div>
                     </div>
                 </div>
                 <div style="font-size: 20px; color: #94a3b8;">→</div>
@@ -244,10 +243,10 @@ if st.session_state.current_view == "dashboard":
         """, unsafe_allow_html=True)
         
         c_q, c_o, c_p, c_action = st.columns([1, 1, 1, 1])
-        c_q.caption(f"<b>{cust['quotations_count']}</b> Quotations / Açık teklif")
-        c_o.caption(f"<b>{cust['open_orders']}</b> Orders / Açık sipariş")
-        c_p.caption(f"<b>{cust['in_production']}</b> Production / Üretimde")
-        if c_action.button("Forma Geç / Sipariş Oluştur", key=f"open_form_{cust['id']}"):
+        c_q.caption(f"<b>{cust.get('quotations_count', 0)}</b> Quotations / Açık teklif")
+        c_o.caption(f"<b>{cust.get('open_orders', 0)}</b> Orders / Açık sipariş")
+        c_p.caption(f"<b>{cust.get('in_production', 0)}</b> Production / Üretimde")
+        if c_action.button("Forma Geç / Sipariş Oluştur", key=f"open_form_{cust.get('id', '001')}"):
             st.session_state.current_view = "form"
             st.rerun()
 
@@ -266,14 +265,14 @@ elif st.session_state.current_view == "form":
         st.markdown("### **01 Customer details / Müşteri bilgileri**")
         col_c1, col_c2 = st.columns(2)
         
-        cust_options = {f"{c['name']} — {c['country']}": c for c in db["customers"]}
+        cust_options = {f"{c.get('name', 'Firma')} — {c.get('country', '')}": c for c in db["customers"]}
         selected_cust_label = col_c2.selectbox("Saved customers / Kayıtlı müşteriler", list(cust_options.keys()))
         selected_cust = cust_options[selected_cust_label]
         
         cust_selection = col_c1.selectbox("Customer selection / Müşteri seçimi", ["Saved customer / Kayıtlı müşteri", "New customer / Yeni müşteri"])
         
         col1, col2 = st.columns(2)
-        company_name = col1.text_input("Company or customer / Firma veya müşteri adı *", value=selected_cust["name"])
+        company_name = col1.text_input("Company or customer / Firma veya müşteri adı *", value=selected_cust.get("name", ""))
         contact_person = col2.text_input("Contact person / Yetkili kişi", value=selected_cust.get("contact_person", ""))
         
         country_options = ["Georgia / Gürcistan", "Iraq / Irak", "Azerbaijan / Azerbaycan", "Turkey / Türkiye"]
