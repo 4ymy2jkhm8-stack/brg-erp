@@ -30,9 +30,81 @@ INITIAL_DATA = {
         }
     ],
     "products": [
-        {"code": "BRG55", "name": "BRG55 Infantry Rifle / Piyade Tüfeği", "category": "Rifle / Tüfek", "unit_price": 1200.0, "stock": 150},
-        {"code": "BRG9-ELITE-G2", "name": "BRG9 ELITE Gen2 Pistol / Tabanca", "category": "Pistol / Tabanca", "unit_price": 450.0, "stock": 320},
-        {"code": "BRG9-FDX", "name": "BRG9 FDX Pistol / Tabanca", "category": "Pistol / Tabanca", "unit_price": 420.0, "stock": 85}
+        {
+            "id": "PROD-001",
+            "code": "BRG9-ELITE",
+            "name": "BRG9 ELITE",
+            "category": "Pistol / Tabanca",
+            "supply_method": "Own production / Kendi üretimimiz",
+            "manufacturer": "BRG Defence",
+            "supplier": "BRG Defence",
+            "caliber": "9x19mm",
+            "weight": "810",
+            "length": "187",
+            "width": "32",
+            "height": "142",
+            "unit_price": 450.0
+        },
+        {
+            "id": "PROD-002",
+            "code": "BRG9-ELITE-G2",
+            "name": "BRG9 ELITE Gen2",
+            "category": "Pistol / Tabanca",
+            "supply_method": "Own production / Kendi üretimimiz",
+            "manufacturer": "BRG Defence",
+            "supplier": "BRG Defence",
+            "caliber": "9x19mm",
+            "weight": "820",
+            "length": "189",
+            "width": "32",
+            "height": "142",
+            "unit_price": 480.0
+        },
+        {
+            "id": "PROD-003",
+            "code": "BRG9-TACTICAL",
+            "name": "BRG9 TACTICAL",
+            "category": "Pistol / Tabanca",
+            "supply_method": "Own production / Kendi üretimimiz",
+            "manufacturer": "BRG Defence",
+            "supplier": "BRG Defence",
+            "caliber": "9x19mm",
+            "weight": "850",
+            "length": "205",
+            "width": "34",
+            "height": "148",
+            "unit_price": 520.0
+        },
+        {
+            "id": "PROD-004",
+            "code": "BRG9-FD",
+            "name": "BRG9 FD",
+            "category": "Pistol / Tabanca",
+            "supply_method": "Own production / Kendi üretimimiz",
+            "manufacturer": "BRG Defence",
+            "supplier": "BRG Defence",
+            "caliber": "9x19mm",
+            "weight": "800",
+            "length": "185",
+            "width": "32",
+            "height": "140",
+            "unit_price": 430.0
+        },
+        {
+            "id": "PROD-005",
+            "code": "BRG55",
+            "name": "BRG55 Piyade Tüfeği",
+            "category": "Rifle / Tüfek",
+            "supply_method": "Own production / Kendi üretimimiz",
+            "manufacturer": "BRG Defence",
+            "supplier": "BRG Defence",
+            "caliber": "5.56x45mm",
+            "weight": "3200",
+            "length": "840",
+            "width": "65",
+            "height": "205",
+            "unit_price": 1200.0
+        }
     ],
     "quotations": []
 }
@@ -51,7 +123,7 @@ def save_db(data):
 st.set_page_config(page_title="BRG Defence — Sales Operations / Satış Yönetimi", page_icon="🛡️", layout="wide")
 db = load_db()
 
-# MODERN VE ŞIK CSS
+# BİREBİR FOTOĞRAFTAKİ ÖZEL CSS
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -116,25 +188,38 @@ st.markdown("""
         font-weight: 500;
     }
 
-    .cust-card {
+    /* Ürün Kartı Stili */
+    .product-card {
         background-color: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 12px;
         padding: 20px;
-        margin-top: 15px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        margin-bottom: 16px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     }
-    .avatar-box {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        color: #ffffff;
-        width: 46px;
-        height: 46px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        font-size: 16px;
+    .product-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: #0f172a;
+        margin-top: 6px;
+        margin-bottom: 8px;
+    }
+    .badge-cat {
+        font-size: 11px;
+        color: #0284c7;
+        background-color: #e0f2fe;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    .badge-supply {
+        font-size: 11px;
+        color: #16a34a;
+        background-color: #dcfce7;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+        float: right;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -149,6 +234,12 @@ if "quote_data" not in st.session_state:
 if "magazines" not in st.session_state:
     st.session_state.magazines = [{"capacity": "18 Round / 18'lik", "qty": 2}]
 
+if "selected_prod_cat" not in st.session_state:
+    st.session_state.selected_prod_cat = "All products / Tüm ürünler"
+
+if "show_add_product_modal" not in st.session_state:
+    st.session_state.show_add_product_modal = False
+
 # HEADER
 st.markdown("""
 <div class="main-header">
@@ -162,7 +253,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ÜST MENÜ BUTONLARI (TAM ÇALIŞIR ŞEKİLDE ENTEGRE EDİLDİ)
+# ÜST MENÜ
 m1, m2, m3, m4, m5 = st.columns([2, 1.5, 2.5, 2, 1.5])
 with m1:
     if st.button("👥 Customers / Müşterilerimiz", type="primary" if st.session_state.current_view == "dashboard" else "secondary", use_container_width=True):
@@ -187,7 +278,7 @@ with m5:
 
 st.markdown("<div style='margin-bottom: 8px;'></div>", unsafe_allow_html=True)
 
-# SÜREÇ VE GEZİNTİ BAR
+# GEZİNTİ BAR
 nav_1, nav_2, nav_3, nav_4, nav_right = st.columns([1, 1, 1.3, 1.8, 2.5])
 with nav_1:
     st.button("← Back / Geri")
@@ -202,14 +293,140 @@ with nav_4:
         st.session_state.current_view = "form"
         st.rerun()
 with nav_right:
-    st.markdown("<div style='text-align: right; color: #64748b; font-size: 13px; margin-top: 8px; font-weight: 500;'>Home / Ana Ekran</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: right; color: #64748b; font-size: 13px; margin-top: 8px; font-weight: 500;'>Products / Ürünler</div>", unsafe_allow_html=True)
 
 today_str = datetime.now().strftime("%d.%m.%Y")
 
 # ==========================================
+# EKRAN: ÜRÜN YÖNETİMİ VE KATALOĞU (FOTOĞRAFTAKİ BİREBİR SAYFA)
+# ==========================================
+if st.session_state.current_view == "products":
+    st.caption("BRG DEFENCE - CATALOGUE / ÜRÜN KATALOĞU")
+    
+    col_p_title, col_p_btn = st.columns([4, 1])
+    with col_p_title:
+        st.markdown("## **Products / Ürünler**")
+        st.caption("Select a category to find products and compatible spare parts. / Ürünleri ve uyumlu yedek parçaları bulmak için kategori seçin.")
+    with col_p_btn:
+        if st.button("+ Add Product / Ürün Ekle", type="primary", use_container_width=True):
+            st.session_state.show_add_product_modal = not st.session_state.show_add_product_modal
+
+    # Kategori Sayıları
+    prods = db["products"]
+    cnt_pistol = sum(1 for p in prods if "Pistol" in p["category"])
+    cnt_rifle = sum(1 for p in prods if "Rifle" in p["category"] and "Spare" not in p["category"])
+    cnt_p_spare = sum(1 for p in prods if "Pistol Spare" in p["category"])
+    cnt_r_spare = sum(1 for p in prods if "Rifle Spare" in p["category"])
+    cnt_ammo = sum(1 for p in prods if "Ammunition" in p["category"])
+
+    # 5 Kategori Kutusu
+    c1, c2, c3, c4, c5 = st.columns(5)
+    if c1.button(f"Pistols / Tabancalar ({cnt_pistol})", use_container_width=True):
+        st.session_state.selected_prod_cat = "Pistol / Tabanca"
+    if c2.button(f"Rifles / Tüfekler ({cnt_rifle})", use_container_width=True):
+        st.session_state.selected_prod_cat = "Rifle / Tüfek"
+    if c3.button(f"Pistol Spare Parts ({cnt_p_spare})", use_container_width=True):
+        st.session_state.selected_prod_cat = "Pistol Spare Parts / Tabanca Yedek Parçaları"
+    if c4.button(f"Rifle Spare Parts ({cnt_r_spare})", use_container_width=True):
+        st.session_state.selected_prod_cat = "Rifle Spare Parts / Tüfek Yedek Parçaları"
+    if c5.button(f"Ammunition / Mühimmat ({cnt_ammo})", use_container_width=True):
+        st.session_state.selected_prod_cat = "Ammunition / Mühimmat"
+
+    col_filter_all, col_search_p = st.columns([1, 3])
+    with col_filter_all:
+        if st.button("All Products / Tüm Ürünler", type="primary" if st.session_state.selected_prod_cat == "All products / Tüm ürünler" else "secondary", use_container_width=True):
+            st.session_state.selected_prod_cat = "All products / Tüm ürünler"
+    with col_search_p:
+        search_kw = st.text_input("Search product, code / Ürün, kod ara", placeholder="Product, code, manufacturer or compatible model / Ürün, kod...", label_visibility="collapsed")
+
+    # ÜRÜN EKLEME FORMU (PENCERE / EXPANDER)
+    if st.session_state.show_add_product_modal:
+        with st.expander("➕ Add Product / Ürün Ekle Formu", expanded=True):
+            st.markdown("### **Add Product / Ürün Ekle**")
+            p_name = st.text_input("Product / model name / Ürün veya model adı *")
+            
+            f_col1, f_col2 = st.columns(2)
+            p_type = f_col1.selectbox("Product type / Ürün türü *", ["Pistol / Tabanca", "Rifle / Tüfek", "Pistol Spare Parts / Tabanca Yedek Parçaları", "Rifle Spare Parts / Tüfek Yedek Parçaları", "Ammunition / Mühimmat"])
+            p_supply = f_col2.selectbox("Supply method / Tedarik şekli", ["Own production / Kendi üretimimiz", "Supplier / Tedarik"])
+            
+            p_code = f_col1.text_input("Product code / Ürün kodu", value=f"BRG9-NEW-{len(prods)+1:02d}")
+            p_mfg = f_col2.text_input("Manufacturer / Üretici", value="BRG Defence")
+            p_sup = f_col1.text_input("Supplier / Tedarikçi", value="BRG Defence")
+            p_price = f_col2.number_input("Unit Price ($) / Birim Fiyat", value=450.0)
+
+            st.markdown("##### **▼ Specifications / Ürün özellikleri (optional / isteğe bağlı)**")
+            s1, s2 = st.columns(2)
+            p_caliber = s1.text_input("Caliber / Kalibre", value="9x19mm")
+            p_weight = s2.text_input("Weight (g) / Ağırlık (g)", value="820")
+            p_length = s1.text_input("Overall length (mm) / Toplam uzunluk (mm)", value="187")
+            p_width = s2.text_input("Width (mm) / Genişlik (mm)", value="32")
+            p_height = s1.text_input("Height (mm) / Yükseklik (mm)", value="142")
+
+            if st.button("Save Product / Ürünü Kaydet", type="primary"):
+                new_prod_item = {
+                    "id": f"PROD-{len(prods)+1:03d}",
+                    "code": p_code,
+                    "name": p_name if p_name else "Yeni Model",
+                    "category": p_type,
+                    "supply_method": p_supply,
+                    "manufacturer": p_mfg,
+                    "supplier": p_sup,
+                    "caliber": p_caliber,
+                    "weight": p_weight,
+                    "length": p_length,
+                    "width": p_width,
+                    "height": p_height,
+                    "unit_price": p_price
+                }
+                db["products"].append(new_prod_item)
+                save_db(db)
+                st.success("✅ Ürün başarıyla eklendi!")
+                st.session_state.show_add_product_modal = False
+                st.rerun()
+
+    st.markdown("---")
+
+    # Ürünleri Filtrele
+    filtered_prods = db["products"]
+    if st.session_state.selected_prod_cat != "All products / Tüm ürünler":
+        filtered_prods = [p for p in filtered_prods if st.session_state.selected_prod_cat.split(" / ")[0] in p["category"]]
+    
+    if search_kw:
+        filtered_prods = [p for p in filtered_prods if search_kw.lower() in p["name"].lower() or search_kw.lower() in p["code"].lower()]
+
+    st.caption(f"{len(filtered_prods)} products / Ürün gösteriliyor")
+
+    # GRID KART DİZİLİMİ (4'lü Sütunlar)
+    cols = st.columns(4)
+    for idx, p in enumerate(filtered_prods):
+        with cols[idx % 4]:
+            st.markdown(f"""
+            <div class="product-card">
+                <span class="badge-cat">{p.get('category', 'Pistol')}</span>
+                <span class="badge-supply">{p.get('supply_method', 'Kendi Üretimimiz').split(' / ')[0]}</span>
+                <div class="product-title">{p.get('name', 'Ürün')}</div>
+                <div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">Kod: {p.get('code', '-')} | Fiyat: <b>${p.get('unit_price', 0)}</b></div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            with st.expander("▶ Details / Özellikler"):
+                st.write(f"**Kalibre:** {p.get('caliber', '-')}")
+                st.write(f"**Ağırlık:** {p.get('weight', '-')} g")
+                st.write(f"**Boyutlar (L/W/H):** {p.get('length', '-')} x {p.get('width', '-')} x {p.get('height', '-')} mm")
+                st.write(f"**Üretici:** {p.get('manufacturer', 'BRG Defence')}")
+
+            btn_e, btn_r = st.columns(2)
+            btn_e.button("Edit / Düzenle", key=f"edit_p_{p['id']}")
+            if btn_r.button("Remove / Çıkar", key=f"del_p_{p['id']}"):
+                db["products"] = [item for item in db["products"] if item["id"] != p["id"]]
+                save_db(db)
+                st.success(f"{p['name']} silindi.")
+                st.rerun()
+
+# ==========================================
 # EKRAN 1: ANA DASHBOARD
 # ==========================================
-if st.session_state.current_view == "dashboard":
+elif st.session_state.current_view == "dashboard":
     st.caption("Records are saved in this browser / Kayıtlar bu tarayıcıda saklanır.")
 
     c_alert_text, c_alert_btn = st.columns([4, 1])
@@ -268,12 +485,11 @@ if st.session_state.current_view == "dashboard":
             st.rerun()
 
 # ==========================================
-# EKRAN 2: FİRMA BİLGİLERİMİZ
+# DİĞER EKRANLAR (COMPANY, SEARCH, TOOLS, ADD_COMPANY, FORM)
 # ==========================================
 elif st.session_state.current_view == "company":
     st.markdown("## 🏢 Our Company Profile / Firma Bilgilerimiz")
     comp = db["company"]
-    
     col_a, col_b = st.columns(2)
     with col_a:
         st.text_input("Title / Ünvan", value=comp["title"], disabled=True)
@@ -282,134 +498,72 @@ elif st.session_state.current_view == "company":
     with col_b:
         st.text_area("Address / Adres", value=comp["address"], disabled=True)
         st.text_input("IBAN / Banka Hesabı", value=comp["iban"], disabled=True)
-        st.text_input("SWIFT Code", value=comp["swift"], disabled=True)
 
-# ==========================================
-# EKRAN 3: ÜRÜN KATALOĞU
-# ==========================================
-elif st.session_state.current_view == "products":
-    st.markdown("## 📦 Product Catalog & Stock / Ürün Kataloğu ve Stok")
-    st.dataframe(pd.DataFrame(db["products"]), use_container_width=True)
-
-# ==========================================
-# EKRAN 4: ARAMA VE FİLTRELEME
-# ==========================================
 elif st.session_state.current_view == "search":
     st.markdown("## 🔍 Search & Filters / Arama ve Filtreleme")
-    q = st.text_input("Search query / Arama terimi girin")
-    st.info("Arama sonuçları burada listelenecektir.")
+    st.text_input("Search query / Arama terimi girin")
 
-# ==========================================
-# EKRAN 5: ARAÇLAR
-# ==========================================
 elif st.session_state.current_view == "tools":
     st.markdown("## ▶ Sales Tools / Satış Araçları")
-    st.write("Döviz Kuru Dönüştürücü / Exchange Rate Calculator")
     val = st.number_input("Amount in USD ($) / Tutar", value=1000.0)
-    st.success(f"Estimated TRY Equivalent / Tahmini TL Karşılığı: {val * 34.5:.2f} ₺")
+    st.success(f"TRY Equivalent / TL Karşılığı: {val * 34.5:.2f} ₺")
 
-# ==========================================
-# EKRAN 6: YENİ FİRMA EKLE
-# ==========================================
 elif st.session_state.current_view == "add_company":
     st.markdown("## ➕ Add New Company / Yeni Firma Ekle")
     new_name = st.text_input("Company Name / Firma Adı *")
     new_country = st.text_input("Country / Ülke *")
-    new_contact = st.text_input("Contact Person / Yetkili Kişi")
-    new_phone = st.text_input("Phone / Telefon")
-    new_email = st.text_input("Email / E-posta")
-    new_address = st.text_area("Address / Adres")
-    
     if st.button("Save Company / Firmayı Kaydet", type="primary"):
-        new_cust = {
+        db["customers"].append({
             "id": f"CUST-{len(db['customers'])+1:03d}",
-            "name": new_name, "country": new_country, "contact_person": new_contact,
-            "phone": new_phone, "email": new_email, "address": new_address,
-            "quotations_count": 0, "open_orders": 0, "in_production": 0
-        }
-        db["customers"].append(new_cust)
+            "name": new_name, "country": new_country, "quotations_count": 0, "open_orders": 0, "in_production": 0
+        })
         save_db(db)
         st.success("✅ Firma eklendi!")
         st.session_state.current_view = "dashboard"
         st.rerun()
 
-# ==========================================
-# EKRAN 7: SİPARİŞ & TEKLİF FORMU (RESUME FORM)
-# ==========================================
 elif st.session_state.current_view == "form":
     st.caption("🔴 Unsaved Changes / Kaydedilmemiş Değişiklikler")
-    
-    t1, t2, t3, t4 = st.tabs([
-        "1️⃣ Customer / Müşteri", 
-        "2️⃣ Dates / Tarihler", 
-        "3️⃣ Products / Ürünler", 
-        "4️⃣ Payment & Save / Ödeme ve Kayıt"
-    ])
+    t1, t2, t3, t4 = st.tabs(["1️⃣ Customer / Müşteri", "2️⃣ Dates / Tarihler", "3️⃣ Products / Ürünler", "4️⃣ Payment & Save / Ödeme ve Kayıt"])
 
     with t1:
         st.markdown("### **01 Customer Details / Müşteri Bilgileri**")
-        col_c1, col_c2 = st.columns(2)
-        
         cust_options = {f"{c.get('name', 'Firma')} — {c.get('country', '')}": c for c in db["customers"]}
-        selected_cust_label = col_c2.selectbox("Saved Customers / Kayıtlı Müşteriler", list(cust_options.keys()))
+        selected_cust_label = st.selectbox("Saved Customers / Kayıtlı Müşteriler", list(cust_options.keys()))
         selected_cust = cust_options[selected_cust_label]
         
-        cust_selection = col_c1.selectbox("Customer Selection / Müşteri Seçimi", ["Saved Customer / Kayıtlı Müşteri", "New Customer / Yeni Müşteri"])
-        
-        col1, col2 = st.columns(2)
-        company_name = col1.text_input("Company or Customer / Firma veya Müşteri Adı *", value=selected_cust.get("name", ""))
-        contact_person = col2.text_input("Contact Person / Yetkili Kişi", value=selected_cust.get("contact_person", ""))
-        
-        country_options = ["Georgia / Gürcistan", "Iraq / Irak", "Azerbaijan / Azerbaycan", "Turkey / Türkiye"]
-        country = col1.selectbox("Country / Ülke *", country_options, index=0)
-        phone = col2.text_input("Phone / Telefon", value=selected_cust.get("phone", ""))
-        email = col1.text_input("Email / E-posta", value=selected_cust.get("email", ""))
+        company_name = st.text_input("Company or Customer / Firma veya Müşteri Adı *", value=selected_cust.get("name", ""))
+        contact_person = st.text_input("Contact Person / Yetkili Kişi", value=selected_cust.get("contact_person", ""))
+        country = st.selectbox("Country / Ülke *", ["Georgia / Gürcistan", "Iraq / Irak", "Azerbaijan / Azerbaycan", "Turkey / Türkiye"], index=0)
+        phone = st.text_input("Phone / Telefon", value=selected_cust.get("phone", ""))
+        email = st.text_input("Email / E-posta", value=selected_cust.get("email", ""))
         address = st.text_area("Customer Address / Müşteri Adresi", value=selected_cust.get("address", ""), height=80)
         
-        st.caption("New customers are saved with the order. Edit company profiles in Company folders. / Yeni müşteriler siparişle kaydedilir.")
-        
         if st.button("Next / Devam →", key="s1_next", type="primary"):
-            st.session_state.quote_data["customer"] = {
-                "name": company_name, "contact_person": contact_person,
-                "country": country, "phone": phone, "email": email, "address": address
-            }
-            st.success("Müşteri bilgileri kaydedildi. Tarihler adımına geçebilirsiniz.")
+            st.session_state.quote_data["customer"] = {"name": company_name, "country": country, "phone": phone}
+            st.success("Müşteri kaydedildi.")
 
     with t2:
-        st.markdown("### **Quotation Tracking / Teklif Takibi**")
-        valid_until_date = st.date_input("Valid Until / Geçerlilik Tarihi *", format="DD.MM.YYYY")
-        
         st.markdown("### **02 Quotation Details / Teklif Bilgileri**")
-        col_d1, col_d2 = st.columns(2)
-        quote_number = col_d1.text_input("Quotation Number — Automatic / Teklif Numarası — Otomatik", value="QUO-2026-C2C27E56", disabled=True)
-        quote_date = col_d2.date_input("Quotation Date / Teklif Tarihi *", datetime.now(), format="DD.MM.YYYY")
-        delivery_date = col_d1.date_input("Requested Delivery Date / İstenen Teslim Tarihi *", format="DD.MM.YYYY")
-        currency = col_d2.selectbox("Currency / Para Birimi", ["USD", "EUR", "TRY"])
-
+        quote_number = st.text_input("Quotation Number", value="QUO-2026-C2C27E56", disabled=True)
+        quote_date = st.date_input("Quotation Date *", datetime.now(), format="DD.MM.YYYY")
+        delivery_date = st.date_input("Requested Delivery Date *", format="DD.MM.YYYY")
+        currency = st.selectbox("Currency / Para Birimi", ["USD", "EUR", "TRY"])
         if st.button("Next / Devam →", key="s2_next", type="primary"):
-            st.session_state.quote_data["dates"] = {
-                "quote_number": quote_number, 
-                "quote_date": quote_date.strftime("%d.%m.%Y"),
-                "delivery_date": delivery_date.strftime("%d.%m.%Y"),
-                "currency": currency
-            }
-            st.success("Tarih bilgileri kaydedildi.")
+            st.session_state.quote_data["dates"] = {"quote_number": quote_number, "currency": currency}
+            st.success("Tarihler kaydedildi.")
 
     with t3:
-        st.markdown("### **Item / Ürün Kalemi**")
-        col_p1, col_p2, col_p3 = st.columns([3, 1, 1])
+        st.markdown("### **Item / Ürün Kalemi & Çoklu Şarjör Seçimi**")
         prod_options = {f"{p['code']} - {p['name']}": p for p in db["products"]}
-        selected_p_label = col_p1.selectbox("Product / Model / Ürün *", list(prod_options.keys()))
+        selected_p_label = st.selectbox("Product / Model / Ürün *", list(prod_options.keys()))
         selected_p = prod_options[selected_p_label]
         
-        qty = col_p2.number_input("Quantity / Adet *", min_value=1, value=1)
-        unit_price = col_p3.number_input("Unit Price / Birim Fiyat *", min_value=0.0, value=float(selected_p["unit_price"]))
+        qty = st.number_input("Quantity / Adet *", min_value=1, value=1)
+        unit_price = st.number_input("Unit Price / Birim Fiyat *", min_value=0.0, value=float(selected_p["unit_price"]))
+        prod_color = st.selectbox("Product Color / Ürün Rengi *", ["Siyah / Black", "FDE / Tan", "Çöl / Desert Sand"])
         
-        col_col1, col_col2 = st.columns(2)
-        prod_color = col_col1.selectbox("Product Color / Ürün Rengi *", ["Siyah / Black", "FDE / Tan", "Çöl / Desert Sand"])
-        cerakote_code = col_col2.text_input("Cerakote Code / Cerakote Kodu (Optional / İsteğe Bağlı)")
-        
-        st.markdown("#### **Magazine Capacity & Quantity / Şarjör Kapasitesi ve Adedi**")
+        st.markdown("#### **Magazine capacity & quantity / Şarjör kapasitesi ve adedi**")
         cap_options = ["15 Round / 15'lik", "18 Round / 18'lik", "20 Round / 20'lik", "30 Round / 30'luk"]
 
         to_remove = None
@@ -418,7 +572,6 @@ elif st.session_state.current_view == "form":
             curr_cap_idx = cap_options.index(mag["capacity"]) if mag["capacity"] in cap_options else 0
             selected_cap = col_m1.selectbox(f"Capacity / Kapasite * #{idx+1}", cap_options, index=curr_cap_idx, key=f"mag_cap_{idx}")
             selected_qty = col_m2.number_input(f"Quantity per Product / Adet * #{idx+1}", min_value=1, value=mag["qty"], key=f"mag_qty_{idx}")
-            
             st.session_state.magazines[idx] = {"capacity": selected_cap, "qty": selected_qty}
             if col_m3.button("✖", key=f"del_mag_{idx}"):
                 to_remove = idx
@@ -436,7 +589,7 @@ elif st.session_state.current_view == "form":
             item_entry = {
                 "product": selected_p["name"], "code": selected_p["code"],
                 "quantity": qty, "unit_price": unit_price, "total": qty * unit_price,
-                "color": prod_color, "cerakote": cerakote_code, "magazines": mag_summary
+                "color": prod_color, "magazines": mag_summary
             }
             st.session_state.quote_data["items"].append(item_entry)
             st.success(f"✅ {selected_p['name']} eklendi!")
@@ -448,11 +601,10 @@ elif st.session_state.current_view == "form":
         st.markdown("### **04 Payment and Notes / Ödeme ve Açıklamalar**")
         pay_terms = st.text_area("Payment Terms / Ödeme Koşulları *", placeholder="Örn. %30 avans, %70 yükleme öncesi TT")
         quote_notes = st.text_area("Quotation Notes / Teklif Notları")
-        
         if st.button("Save Quotation / Teklifi Kaydet", type="primary"):
             final_record = st.session_state.quote_data
             final_record["created_at"] = datetime.now().strftime("%d.%m.%Y %H:%M:%S")
             db["quotations"].append(final_record)
             save_db(db)
             st.balloons()
-            st.success("✅ Teklif başarıyla kaydedildi!")
+            st.success("✅ Teklif kaydedildi!")
