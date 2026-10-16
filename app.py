@@ -141,4 +141,23 @@ with col_m1:
 if st.session_state.current_tab == "customers":
     st.markdown("## 👥 Customers & MSB Export Permits / Müşteri Bilgileri ve İhracat İzinleri")
     
-    tab_list, tab_add = st
+    tab_list, tab_add = st.tabs(["📋 Customer List & Permits / Müşteri Listesi ve İzinler", "➕ Add Customer / Yeni Müşteri Ekle"])
+    
+    with tab_list:
+        for cust in db["customers"]:
+            with st.container():
+                st.markdown(f"""
+                <div class="card-box">
+                    <h3 style="margin:0; color:#0f172a;">{cust['name']} <span style="font-size:14px; color:#64748b;">({cust['country']})</span></h3>
+                    <p style="margin:4px 0; color:#475569; font-size:13px;">
+                        👤 <b>Yetkili:</b> {cust.get('contact_person','-')} | 📞 <b>Tel:</b> {cust.get('phone','-')} | ✉️ <b>E-posta:</b> {cust.get('email','-')}
+                    </p>
+                    <p style="margin:0; color:#64748b; font-size:12px;">📍 <b>Adres:</b> {cust.get('address','-')}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                exp_permits = cust.get("export_permits", [])
+                st.markdown(f"#### 🛡️ Registered MSB Permits / Kayıtlı MSB İhracat İzinleri ({len(exp_permits)} Adet Belge)")
+                
+                for p_idx, permit in enumerate(exp_permits):
+                    with st.expander(f"📄 MS
