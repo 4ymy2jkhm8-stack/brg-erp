@@ -59,7 +59,7 @@ def save_db(data):
 st.set_page_config(page_title="BRG DEFENCE — ERP Portal", page_icon="🛡️", layout="wide")
 db = load_db()
 
-# KOMPAKT CSS
+# KOMPAKT VE ŞIK TASARIM CSS
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -67,47 +67,4 @@ st.markdown("""
     .stApp { background-color: #f8fafc; }
     
     .top-header {
-        background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
-        color: white;
-        padding: 10px 18px;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .top-title { font-size: 18px; font-weight: 700; }
-    .card-box {
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 12px;
-        margin-bottom: 10px;
-    }
-    .status-ok {
-        background-color: #dcfce7;
-        color: #15803d;
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-weight: 600;
-        font-size: 12px;
-        display: inline-block;
-        margin-top: 8px;
-    }
-    .status-err {
-        background-color: #fee2e2;
-        color: #b91c1c;
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-weight: 600;
-        font-size: 12px;
-        display: inline-block;
-        margin-top: 8px;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# HEADER
-st.markdown("""
-<div class="top-header">
-    <div><span style="font-size: 20px;">🛡️</span> <span class="top-title">BRG DEF
+        background: linear-gradient(90deg, #0f172a 0%, #1e293b
