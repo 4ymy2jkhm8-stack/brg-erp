@@ -59,7 +59,7 @@ def save_db(data):
 st.set_page_config(page_title="BRG DEFENCE — ERP Portal", page_icon="🛡️", layout="wide")
 db = load_db()
 
-# SIKI VE KOMPAKT CSS
+# KOMPAKT VE SIKI TASARIM
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -77,13 +77,6 @@ st.markdown("""
         align-items: center;
     }
     .top-title { font-size: 20px; font-weight: 700; }
-    .card-box {
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 14px;
-        margin-bottom: 12px;
-    }
     .status-ok {
         background-color: #dcfce7;
         color: #15803d;
@@ -147,29 +140,37 @@ with col_m1:
 if st.session_state.current_tab == "customers":
     st.markdown("## 👥 Customers & MSB Export Permits / İhracat İzin Kontrolü")
     
-    cust = db["customers"][0] # Irak İçişleri Bakanlığı
-    exp_permit = cust["export_permits"][0] # Taranan Belge
+    # Müşteri ve İzin Belgesi Güvenli Kontrolü
+    if not db.get("customers"):
+        db["customers"] = INITIAL_DATA["customers"]
+        save_db(db)
+        
+    cust = db["customers"][0]
     
-    st.markdown(f"### 📄 Aktif Belge: **{exp_permit['permit_no']}** (Son Tarih: {exp_permit['valid_until']})")
+    if not cust.get("export_permits"):
+        cust["export_permits"] = INITIAL_DATA["customers"][0]["export_permits"]
+        save_db(db)
+        
+    exp_permit = cust["export_permits"][0]
+    
+    st.markdown(f"### 📄 Aktif İzin Belgesi: **{exp_permit['permit_no']}** (Son Geçerlilik: {exp_permit['valid_until']})")
     
     st.markdown("#### **Sipariş / İhracat Kalem Girişi (El Yazısı Not Doğrulaması)**")
-    st.caption("Eklendikçe taranan belgedeki sayı ve ürün adlarıyla canlı karşılaştırılır:")
+    st.caption("Girdiğiniz ürünler taranan MSB belgesindeki miktar ve model adlarıyla canlı karşılaştırılır:")
 
-    # SIKI VE KISA BOYUTLU ÜRÜN SATIRLARI
-    permit_items_dict = {it["code"]: it for it in exp_permit["items"]}
+    # KOMPAKT ÜRÜN SATIRLARI VE KONTROL
+    permit_items_dict = {it["code"]: it for it in exp_permit.get("items", [])}
 
     to_delete = None
     for idx, item in enumerate(st.session_state.order_items):
         r1, r2, r3, r4 = st.columns([3, 1.5, 3.5, 0.5])
         
-        # Ürün Seçimi
         prod_keys = list(permit_items_dict.keys())
         curr_idx = prod_keys.index(item["code"]) if item["code"] in prod_keys else 0
         
         sel_code = r1.selectbox(f"Ürün Adı #{idx+1}", prod_keys, format_func=lambda x: permit_items_dict[x]["name"], index=curr_idx, key=f"p_code_{idx}")
         sel_qty = r2.number_input(f"Adet (Ad) #{idx+1}", min_value=1, value=item["qty"], key=f"p_qty_{idx}")
         
-        # Seçilen Veriyi Güncelle
         st.session_state.order_items[idx]["code"] = sel_code
         st.session_state.order_items[idx]["name"] = permit_items_dict[sel_code]["name"]
         st.session_state.order_items[idx]["qty"] = sel_qty
