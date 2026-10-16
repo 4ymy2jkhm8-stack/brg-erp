@@ -69,7 +69,7 @@ def save_uploaded_file(uploaded_file, prefix):
 st.set_page_config(page_title="BRG DEFENCE — ERP Portal", page_icon="🛡️", layout="wide")
 db = load_db()
 
-# BİREBİR ŞIK KURUMSAL CSS
+# KURUMSAL ŞIK CSS
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -141,67 +141,4 @@ with col_m1:
 if st.session_state.current_tab == "customers":
     st.markdown("## 👥 Customers & MSB Export Permits / Müşteri Bilgileri ve İhracat İzinleri")
     
-    tab_list, tab_add = st.tabs(["📋 Customer List & Permits / Müşteri Listesi ve İzinler", "➕ Add Customer / Yeni Müşteri Ekle"])
-    
-    with tab_list:
-        for cust in db["customers"]:
-            with st.container():
-                st.markdown(f"""
-                <div class="card-box">
-                    <h3 style="margin:0; color:#0f172a;">{cust['name']} <span style="font-size:14px; color:#64748b;">({cust['country']})</span></h3>
-                    <p style="margin:4px 0; color:#475569; font-size:13px;">
-                        👤 <b>Yetkili:</b> {cust.get('contact_person','-')} | 📞 <b>Tel:</b> {cust.get('phone','-')} | ✉️ <b>E-posta:</b> {cust.get('email','-')}
-                    </p>
-                    <p style="margin:0; color:#64748b; font-size:12px;">📍 <b>Adres:</b> {cust.get('address','-')}</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                exp_permits = cust.get("export_permits", [])
-                st.markdown(f"#### 🛡️ Registered MSB Permits / Kayıtlı MSB İhracat İzinleri ({len(exp_permits)} Adet Belge)")
-                
-                for p_idx, permit in enumerate(exp_permits):
-                    with st.expander(f"📄 MSB İzin No: {permit['permit_no']} — (Son Geçerlilik: {permit['valid_until']})", expanded=True):
-                        st.caption(f"İzin Tarihi: {permit.get('issue_date', '-')} | Son Geçerlilik Tarihi: {permit['valid_until']}")
-                        
-                        # HER BİR ÜRÜNÜN AYRI AYRI ADEDİ VE KALAN KOTASI TABLE YAPISI
-                        item_rows = []
-                        for it in permit.get("items", []):
-                            rem = it['total_qty'] - it['used_qty']
-                            item_rows.append({
-                                "Ürün / Model Adı": it['name'],
-                                "Ürün Kodu": it['code'],
-                                "İzin Verilen Miktar": f"{it['total_qty']:,} Adet",
-                                "Sevk Edilen Miktar": f"{it['used_qty']:,} Adet",
-                                "Kalan İzin Kotası": f"{rem:,} Adet"
-                            })
-                        st.table(pd.DataFrame(item_rows))
-                        
-                        # HER ÜRÜN İÇİN SEVKİYAT EKSİLTME İŞLEMİ
-                        st.markdown("##### 🚚 Sevkiyat Çıkışı / Kota Eksiltme")
-                        sim_c1, sim_c2, sim_c3 = st.columns([2.5, 1, 1])
-                        
-                        item_options = {f"{it['name']} (Kalan Kota: {it['total_qty'] - it['used_qty']:,} Adet)": it for it in permit.get("items", [])}
-                        selected_item_label = sim_c1.selectbox("Sevk Edilecek Ürünü Seçin", list(item_options.keys()), key=f"sel_it_{p_idx}")
-                        selected_item = item_options[selected_item_label]
-                        
-                        ship_qty = sim_c2.number_input("Sevk Adedi", min_value=1, value=100, key=f"ship_qty_{p_idx}")
-                        
-                        if sim_c3.button("Sevkiyatı Düş / Eksilt", type="primary", key=f"btn_ship_{p_idx}"):
-                            if selected_item["used_qty"] + ship_qty <= selected_item["total_qty"]:
-                                selected_item["used_qty"] += ship_qty
-                                save_db(db)
-                                st.success(f"✅ {ship_qty} adet '{selected_item['name']}' sevk edildi. Kalan Kota: {selected_item['total_qty'] - selected_item['used_qty']:,} adet.")
-                                st.rerun()
-                            else:
-                                st.error(f"❌ İzin kotası aşılamaz! Bu ürün için kalan maksimum miktar: {selected_item['total_qty'] - selected_item['used_qty']:,} adet.")
-
-                # ÇOKLU KALEMLİ YENİ İZİN BELGESİ EKLEME
-                with st.expander("➕ Add New MSB Export Permit / Yeni MSB İhracat İzni Ekle"):
-                    new_exp_no = st.text_input("MSB License / Decision No (Sayı) *", placeholder="E-38100341-302.04-...", key=f"new_p_no_{cust['id']}")
-                    new_exp_date = st.date_input("Valid Until / Son Geçerlilik Tarihi *", format="DD.MM.YYYY", key=f"new_p_date_{cust['id']}")
-                    exp_file = st.file_uploader("Upload Scanned MSB Document (PDF/Image)", type=["pdf", "png", "jpg", "jpeg"], key=f"new_p_file_{cust['id']}")
-                    
-                    st.caption("İzin Belgesindeki Kalem ve Adet Bilgisi:")
-                    p_item_code = st.text_input("Product Code / Ürün Kodu (Örn: BRG9-ELITE)", key=f"p_ic_{cust['id']}")
-                    p_item_name = st.text_input("Product Name / Ürün Adı (Örn: BRG9 Elite 9x19mm)", key=f"p_in_{cust['id']}")
-                    p_item_qty = st.number_input("Allowed Total Quantity / İzin Verilen Miktar (Adet)", min_value
+    tab_list, tab_add = st
