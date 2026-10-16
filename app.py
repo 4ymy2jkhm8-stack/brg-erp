@@ -1,28 +1,46 @@
 import streamlit as st
 import json
 import os
-import base64
+import pandas as pd
 from datetime import datetime
 
 DB_FILE = "brg_erp_db.json"
 UPLOAD_DIR = "uploaded_permits"
 
-# Dosya Yükleme Klasörü Kontrolü
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
+# FOTOĞRAFTAN/PDF'DEN ÇIKARILAN GERÇEK VERİLER
 INITIAL_DATA = {
     "customers": [
         {
-            "id": "CUST-001",
-            "name": "KAVIANI 2015",
-            "country": "Georgia / Gürcistan",
-            "contact_person": "ROMA",
-            "phone": "+995 599351351",
-            "email": "fatih@brgdefence.com",
-            "address": "BATUMI, BAGRATIONI 157A",
+            "id": "CUST-IRAQ-01",
+            "name": "IRAK İÇİŞLERİ BAKANLIĞI",
+            "country": "Iraq / Irak",
+            "contact_person": "T.C. MSB KOORDİNASYON",
+            "phone": "-",
+            "email": "info@moi.gov.iq",
+            "address": "BAGHDAD / IRAQ",
             "import_permits": [],
-            "export_permits": []
+            "export_permits": [
+                {
+                    "permit_no": "E-38100341-302.04-6134334",
+                    "issue_date": "13.05.2026",
+                    "valid_until": "30.12.2028",
+                    "items": [
+                        {"code": "BRG9-ELITE", "name": "BRG9 Elite 9x19mm", "total_qty": 3300, "used_qty": 0},
+                        {"code": "BRG9-ELITE-G2", "name": "BRG9 Elite Gen 2 9x19mm", "total_qty": 5000, "used_qty": 0},
+                        {"code": "BRG9-TACTICAL", "name": "BRG9 Tactical 9x19mm", "total_qty": 2750, "used_qty": 0},
+                        {"code": "BRG9-FD", "name": "BRG9 FD 9x19mm", "total_qty": 5000, "used_qty": 0},
+                        {"code": "BRG9-FDX", "name": "BRG9 FDX 9x19mm", "total_qty": 5000, "used_qty": 0},
+                        {"code": "BRG55", "name": "BRG55 5.56x45mm Rifle", "total_qty": 5000, "used_qty": 0},
+                        {"code": "BRG55-CH", "name": "Charging Handle for BRG55", "total_qty": 500, "used_qty": 0},
+                        {"code": "BRG55-HG", "name": "Hand Guard for BRG55", "total_qty": 500, "used_qty": 0},
+                        {"code": "BRG55-LPK", "name": "Lower Part Kit for BRG55", "total_qty": 500, "used_qty": 0},
+                        {"code": "BRG55-BK", "name": "Buffer Kit for BRG55", "total_qty": 500, "used_qty": 0}
+                    ]
+                }
+            ]
         }
     ]
 }
@@ -51,7 +69,7 @@ def save_uploaded_file(uploaded_file, prefix):
 st.set_page_config(page_title="BRG DEFENCE — ERP Portal", page_icon="🛡️", layout="wide")
 db = load_db()
 
-# KURUMSAL TASARIM
+# KURUMSAL BİREBİR TASARIM
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -82,7 +100,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 1. EN ÜST KURUMSAL HEADER
+# 1. EN ÜST HEADER
 st.markdown("""
 <div class="top-header">
     <div>
@@ -95,7 +113,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# 2. STANDART GEZİNTİ BUTONLARI (BACK / FORWARD / HOME)
+# 2. NAVİGASYON BUTONLARI (BACK / FORWARD / HOME)
 c_nav1, c_nav2, c_nav3, _ = st.columns([1, 1, 1.2, 5])
 with c_nav1:
     st.button("← Back / Geri")
@@ -108,7 +126,6 @@ with c_nav3:
 
 st.markdown("---")
 
-# 3. İLK MODÜLÜMÜZ: MÜŞTERİLERİMİZ (CUSTOMERS)
 if "current_tab" not in st.session_state:
     st.session_state.current_tab = "customers"
 
@@ -119,14 +136,13 @@ with col_m1:
         st.rerun()
 
 # ==========================================
-# MODÜL 1: MÜŞTERİ BİLGİLERİ & BELGE YÜKLEME
+# MÜŞTERİLER VE ÇOKLU İHRACAT İZİNLERİ (MSB)
 # ==========================================
 if st.session_state.current_tab == "customers":
-    st.markdown("## 👥 Customers & Licenses / Müşteri Bilgileri ve İzinler")
+    st.markdown("## 👥 Customers & MSB Export Permits / Müşteri Bilgileri ve İhracat İzinleri")
     
-    tab_list, tab_add = st.tabs(["📋 Customer List / Müşteri Listesi", "➕ Add Customer / Yeni Müşteri Ekle"])
+    tab_list, tab_add = st.tabs(["📋 Customer List & Permits / Müşteri Listesi ve İzinler", "➕ Add Customer / Yeni Müşteri Ekle"])
     
-    # MÜŞTERİ LİSTESİ VE TARANMIŞ İZİN BELGELERİ
     with tab_list:
         for cust in db["customers"]:
             with st.container():
@@ -140,86 +156,73 @@ if st.session_state.current_tab == "customers":
                 </div>
                 """, unsafe_allow_html=True)
                 
-                exp1, exp2 = st.columns(2)
+                exp_permits = cust.get("export_permits", [])
                 
-                # EUC / İTHALAT İZNİ EKLE VE TARANMIŞ DOSYA YÜKLE
-                with exp1.expander("📄 EUC / Import Permits / İthalat İzinleri"):
-                    euc_list = cust.get("import_permits", [])
-                    if euc_list:
-                        for e in euc_list:
-                            st.write(f"• **{e['euc_no']}** — {e['qty']} Adet / Pcs ({e['date']})")
-                            if e.get("file_path") and os.path.exists(e["file_path"]):
-                                with open(e["file_path"], "rb") as f:
-                                    st.download_button(
-                                        label=f"📥 Taranmış Evrak İndir ({e['file_name']})",
-                                        data=f,
-                                        file_name=e["file_name"],
-                                        key=f"down_euc_{e['euc_no']}"
-                                    )
-                    else:
-                        st.info("Kayıtlı ithalat izni bulunmuyor.")
-                    
-                    st.markdown("---")
-                    st.caption("➕ Add EUC & Upload Scan / İthalat İzni ve Taranmış Evrak Ekle")
-                    new_euc_no = st.text_input("EUC / Permit No", key=f"euc_no_{cust['id']}")
-                    new_euc_qty = st.number_input("Allowed Qty / Miktar (Adet)", min_value=1, value=500, key=f"euc_qty_{cust['id']}")
-                    euc_file = st.file_uploader("Upload Scanned EUC (PDF/Image) / Taranmış İzin Belgesi Yükle", type=["pdf", "png", "jpg", "jpeg", "webp"], key=f"euc_file_{cust['id']}")
-                    
-                    if st.button("Save EUC / İzni Kaydet", key=f"btn_euc_{cust['id']}"):
-                        fname, fpath = save_uploaded_file(euc_file, f"EUC_{cust['id']}")
-                        if "import_permits" not in cust:
-                            cust["import_permits"] = []
-                        cust["import_permits"].append({
-                            "euc_no": new_euc_no,
-                            "qty": new_euc_qty,
-                            "date": datetime.now().strftime("%d.%m.%Y"),
-                            "file_name": fname,
-                            "file_path": fpath
-                        })
-                        save_db(db)
-                        st.success("EUC Belgesi ve Taranmış Evrak Kaydedildi!")
-                        st.rerun()
+                st.markdown(f"#### 🛡️ Registered MSB Permits / Kayıtlı MSB İhracat İzinleri ({len(exp_permits)} Adet İzin)")
+                
+                for p_idx, permit in enumerate(exp_permits):
+                    with st.expander(f"📄 MSB İzin No: {permit['permit_no']} — (Son Tarih: {permit['valid_until']})", expanded=p_idx == 0):
+                        st.caption(f"İzin Tarihi: {permit.get('issue_date', '-')} | Geçerlilik: {permit['valid_until']}")
+                        
+                        # İZNİN KALEMLERİ VE KALAN KOTALAR
+                        item_rows = []
+                        for it in permit.get("items", []):
+                            rem = it['total_qty'] - it['used_qty']
+                            item_rows.append({
+                                "Ürün / Model": it['name'],
+                                "Ürün Kodu": it['code'],
+                                "Toplam İzinli": f"{it['total_qty']:,} Adet",
+                                "Sevk Edilen": f"{it['used_qty']:,} Adet",
+                                "Kalan Kota": f"{rem:,} Adet"
+                            })
+                        st.table(pd.DataFrame(item_rows))
+                        
+                        # SEVKİYAT DÜŞÜM TESTİ / SİMÜLASYONU
+                        st.markdown("##### 🚚 Sevkiyat Düşüm İptal / Miktar Güncelleme")
+                        sim_c1, sim_c2, sim_c3 = st.columns([2, 1, 1])
+                        selected_item_code = sim_c1.selectbox(f"Ürün Seç (#{p_idx})", [i['code'] + " - " + i['name'] for i in permit.get("items", [])], key=f"sel_it_{p_idx}")
+                        ship_qty = sim_c2.number_input(f"Sevk Adedi (#{p_idx})", min_value=1, value=100, key=f"ship_qty_{p_idx}")
+                        
+                        if sim_c3.button(f"Sevkiyatı Düş / Eksilt (#{p_idx})", type="primary", key=f"btn_ship_{p_idx}"):
+                            code_pure = selected_item_code.split(" - ")[0]
+                            for it in permit["items"]:
+                                if it["code"] == code_pure:
+                                    if it["used_qty"] + ship_qty <= it["total_qty"]:
+                                        it["used_qty"] += ship_qty
+                                        save_db(db)
+                                        st.success(f"✅ {ship_qty} adet {it['name']} sevk edildi olarak işlendi. Kalan: {it['total_qty'] - it['used_qty']}")
+                                        st.rerun()
+                                    else:
+                                        st.error(f"❌ İzin kotası aşılamaz! Maksimum düşülebilecek miktar: {it['total_qty'] - it['used_qty']}")
 
-                # İHRACAT İZNİ (MSB) EKLE VE TARANMIŞ DOSYA YÜKLE
-                with exp2.expander("🛡️ Export Permits / İhracat İzinleri (MSB)"):
-                    exp_list = cust.get("export_permits", [])
-                    if exp_list:
-                        for ex in exp_list:
-                            st.write(f"• **{ex['permit_no']}** — {ex['qty']} Adet / Pcs (Son Tarih: {ex['valid_until']})")
-                            if ex.get("file_path") and os.path.exists(ex["file_path"]):
-                                with open(ex["file_path"], "rb") as f:
-                                    st.download_button(
-                                        label=f"📥 Taranmış Evrak İndir ({ex['file_name']})",
-                                        data=f,
-                                        file_name=ex["file_name"],
-                                        key=f"down_exp_{ex['permit_no']}"
-                                    )
-                    else:
-                        st.info("Kayıtlı ihracat izni bulunmuyor.")
+                # YENİ MSB İHRACAT İZNİ VE TARANMIŞ EVRAK EKLEME
+                with st.expander("➕ Add New MSB Export Permit / Yeni MSB İhracat İzni Ekle"):
+                    new_exp_no = st.text_input("MSB License / Decision No (Sayı) *", placeholder="E-38100341-302.04-...", key=f"new_p_no_{cust['id']}")
+                    new_exp_date = st.date_input("Valid Until / Son Geçerlilik Tarihi *", format="DD.MM.YYYY", key=f"new_p_date_{cust['id']}")
+                    exp_file = st.file_uploader("Upload Scanned MSB Document (PDF/Image) / Taranmış İzin Belgesi Yükle", type=["pdf", "png", "jpg", "jpeg"], key=f"new_p_file_{cust['id']}")
                     
-                    st.markdown("---")
-                    st.caption("➕ Add Export Permit & Upload Scan / İhracat İzni ve Taranmış Evrak Ekle")
-                    new_exp_no = st.text_input("MSB License No / İzin No", key=f"exp_no_{cust['id']}")
-                    new_exp_qty = st.number_input("Approved Qty / Onaylanan Miktar", min_value=1, value=500, key=f"exp_qty_{cust['id']}")
-                    new_exp_date = st.date_input("Valid Until / Geçerlilik Tarihi", format="DD.MM.YYYY", key=f"exp_date_{cust['id']}")
-                    exp_file = st.file_uploader("Upload Scanned Permit (PDF/Image) / Taranmış İzin Belgesi Yükle", type=["pdf", "png", "jpg", "jpeg", "webp"], key=f"exp_file_{cust['id']}")
+                    st.caption("İzin Belgesindeki Kalemleri Tanımlayın:")
+                    p_item_code = st.text_input("Product Code / Ürün Kodu (Örn: BRG9-ELITE)", key=f"p_ic_{cust['id']}")
+                    p_item_name = st.text_input("Product Name / Ürün Adı (Örn: BRG9 Elite 9x19mm)", key=f"p_in_{cust['id']}")
+                    p_item_qty = st.number_input("Allowed Total Quantity / Toplam İzin Miktarı", min_value=1, value=1000, key=f"p_iq_{cust['id']}")
                     
-                    if st.button("Save Export Permit / İhracat İznini Kaydet", key=f"btn_exp_{cust['id']}"):
+                    if st.button("Save New Permit / Yeni İzni Kaydet", key=f"btn_save_p_{cust['id']}"):
                         fname, fpath = save_uploaded_file(exp_file, f"MSB_{cust['id']}")
-                        if "export_permits" not in cust:
-                            cust["export_permits"] = []
-                        cust["export_permits"].append({
+                        new_permit_data = {
                             "permit_no": new_exp_no,
-                            "qty": new_exp_qty,
+                            "issue_date": datetime.now().strftime("%d.%m.%Y"),
                             "valid_until": new_exp_date.strftime("%d.%m.%Y"),
                             "file_name": fname,
-                            "file_path": fpath
-                        })
+                            "file_path": fpath,
+                            "items": [
+                                {"code": p_item_code, "name": p_item_name, "total_qty": p_item_qty, "used_qty": 0}
+                            ]
+                        }
+                        cust["export_permits"].append(new_permit_data)
                         save_db(db)
-                        st.success("İhracat İzni ve Taranmış Evrak Kaydedildi!")
+                        st.success("✅ Yeni MSB İzin Belgesi sisteme eklendi!")
                         st.rerun()
 
-    # YENİ MÜŞTERİ EKLEME FORMU
     with tab_add:
         st.markdown("### ➕ New Customer Registration / Yeni Müşteri Kaydı")
         c_col1, c_col2 = st.columns(2)
