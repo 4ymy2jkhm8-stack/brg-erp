@@ -69,7 +69,7 @@ def save_uploaded_file(uploaded_file, prefix):
 st.set_page_config(page_title="BRG DEFENCE — ERP Portal", page_icon="🛡️", layout="wide")
 db = load_db()
 
-# KURUMSAL ŞIK CSS
+# KURUMSAL TASARIM
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -113,7 +113,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# 2. STANDART GEZİNTİ BUTONLARI
+# 2. NAVİGASYON BUTONLARI
 c_nav1, c_nav2, c_nav3, _ = st.columns([1, 1, 1.2, 5])
 with c_nav1:
     st.button("← Back / Geri")
@@ -132,32 +132,3 @@ if "current_tab" not in st.session_state:
 col_m1, _ = st.columns([2, 6])
 with col_m1:
     if st.button("👥 Customers / Müşterilerimiz", type="primary", use_container_width=True):
-        st.session_state.current_tab = "customers"
-        st.rerun()
-
-# ==========================================
-# MÜŞTERİLER VE HER BİRİ AYRI ADETLİ İZİNLER
-# ==========================================
-if st.session_state.current_tab == "customers":
-    st.markdown("## 👥 Customers & MSB Export Permits / Müşteri Bilgileri ve İhracat İzinleri")
-    
-    tab_list, tab_add = st.tabs(["📋 Customer List & Permits / Müşteri Listesi ve İzinler", "➕ Add Customer / Yeni Müşteri Ekle"])
-    
-    with tab_list:
-        for cust in db["customers"]:
-            with st.container():
-                st.markdown(f"""
-                <div class="card-box">
-                    <h3 style="margin:0; color:#0f172a;">{cust['name']} <span style="font-size:14px; color:#64748b;">({cust['country']})</span></h3>
-                    <p style="margin:4px 0; color:#475569; font-size:13px;">
-                        👤 <b>Yetkili:</b> {cust.get('contact_person','-')} | 📞 <b>Tel:</b> {cust.get('phone','-')} | ✉️ <b>E-posta:</b> {cust.get('email','-')}
-                    </p>
-                    <p style="margin:0; color:#64748b; font-size:12px;">📍 <b>Adres:</b> {cust.get('address','-')}</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                exp_permits = cust.get("export_permits", [])
-                st.markdown(f"#### 🛡️ Registered MSB Permits / Kayıtlı MSB İhracat İzinleri ({len(exp_permits)} Adet Belge)")
-                
-                for p_idx, permit in enumerate(exp_permits):
-                    with st.expander(f"📄 MS
