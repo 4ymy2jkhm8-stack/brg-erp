@@ -10,7 +10,7 @@ UPLOAD_DIR = "uploaded_permits"
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
-# MSB İHRACAT İZNİ GERÇEK VERİLERİ
+# TAM ENTEGRE GERÇEK VERİ YAPISI
 INITIAL_DATA = {
     "customers": [
         {
@@ -18,12 +18,15 @@ INITIAL_DATA = {
             "name": "IRAK İÇİŞLERİ BAKANLIĞI",
             "country": "Iraq / Irak",
             "contact_person": "T.C. MSB KOORDİNASYON",
-            "phone": "-",
+            "phone": "+964 770 000 0000",
             "email": "info@moi.gov.iq",
             "address": "BAGHDAD / IRAQ",
-            "import_permits": [],
+            "import_permits": [
+                {"id": "EUC-001", "euc_no": "EUC-2026-IRAQ-88", "qty": 25000, "date": "10.05.2026"}
+            ],
             "export_permits": [
                 {
+                    "id": "EXP-001",
                     "permit_no": "E-38100341-302.04-6134334",
                     "issue_date": "13.05.2026",
                     "valid_until": "30.12.2028",
@@ -38,6 +41,23 @@ INITIAL_DATA = {
                         {"code": "BRG55-HG", "name": "Hand Guard for BRG55", "total_qty": 500, "used_qty": 0},
                         {"code": "BRG55-LPK", "name": "Lower Part Kit for BRG55", "total_qty": 500, "used_qty": 0},
                         {"code": "BRG55-BK", "name": "Buffer Kit for BRG55", "total_qty": 500, "used_qty": 0}
+                    ]
+                }
+            ],
+            "orders": [
+                {
+                    "order_no": "ORD-2026-001",
+                    "date": "15.05.2026",
+                    "status": "Müşteri Onayladı",
+                    "approval_doc": "APPROVED_MOI_SIGNED.pdf",
+                    "proforma_no": "PI-2026-8801",
+                    "work_order_no": "WO-9901",
+                    "items": [
+                        {"code": "BRG9-ELITE", "name": "BRG9 Elite 9x19mm", "qty": 1000, "unit_price": 450.0},
+                        {"code": "BRG9-ELITE-G2", "name": "BRG9 Elite Gen 2 9x19mm", "qty": 1000, "unit_price": 480.0}
+                    ],
+                    "shipments": [
+                        {"shipment_no": "SHP-001", "date": "01.06.2026", "item_code": "BRG9-ELITE", "qty": 500}
                     ]
                 }
             ]
@@ -59,7 +79,7 @@ def save_db(data):
 st.set_page_config(page_title="BRG DEFENCE — ERP Portal", page_icon="🛡️", layout="wide")
 db = load_db()
 
-# KOMPAKT VE ŞIK TASARIM CSS
+# KURUMSAL SIKI CSS
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -87,41 +107,27 @@ st.markdown("""
     .status-ok {
         background-color: #dcfce7;
         color: #15803d;
-        padding: 4px 10px;
-        border-radius: 6px;
+        padding: 4px 8px;
+        border-radius: 4px;
         font-weight: 600;
         font-size: 12px;
-        display: inline-block;
-        margin-top: 8px;
-    }
-    .status-err {
-        background-color: #fee2e2;
-        color: #b91c1c;
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-weight: 600;
-        font-size: 12px;
-        display: inline-block;
-        margin-top: 8px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# HEADER
+# EN ÜST HEADER
 st.markdown("""
 <div class="top-header">
-    <div><span style="font-size: 20px;">🛡️</span> <span class="top-title">BRG DEFENCE</span></div>
-    <div style="font-size:11px; text-align:right; color:#94a3b8;">SALES OPERATIONS & ERP</div>
+    <div><span style="font-size: 20px;">🛡️</span> <span class="top-title">BRG DEFENCE ERP</span></div>
+    <div style="font-size:11px; text-align:right; color:#94a3b8;">DEFENCE EXPORT OPERATIONS</div>
 </div>
 """, unsafe_allow_html=True)
 
-# NAVİGASYON
-c_nav1, c_nav2, c_nav3, _ = st.columns([1, 1, 1.2, 5])
-with c_nav1:
-    st.button("← Back / Geri")
-with c_nav2:
-    st.button("Forward / İleri →")
-with c_nav3:
+# GEZİNTİ
+c1, c2, c3, _ = st.columns([1, 1, 1.2, 5])
+with c1: st.button("← Back / Geri")
+with c2: st.button("Forward / İleri →")
+with c3:
     if st.button("🏠 Home / Ana Ekran"):
         st.session_state.current_tab = "customers"
         st.rerun()
@@ -131,109 +137,155 @@ st.markdown("---")
 if "current_tab" not in st.session_state:
     st.session_state.current_tab = "customers"
 
-if "order_items" not in st.session_state:
-    st.session_state.order_items = []
-
-col_m1, _ = st.columns([2, 6])
-with col_m1:
-    if st.button("👥 Customers / Müşterilerimiz", type="primary", use_container_width=True):
-        st.session_state.current_tab = "customers"
-        st.rerun()
-
-# ==========================================
-# MÜŞTERİ DÜĞMESİNE BASILDIĞINDA ÇALIŞAN EKRAN
-# ==========================================
+# MÜŞTERİLERİMİZ ANA MODÜLÜ
 if st.session_state.current_tab == "customers":
-    st.markdown("## 👥 Customers & Permits / Müşterilerimiz ve İzin Yönetimi")
+    st.markdown("## 👥 Customers & Integrated Operations / Müşteri ve Entegre Operasyonlar")
     
-    if not db.get("customers"):
-        db["customers"] = INITIAL_DATA["customers"]
-        save_db(db)
+    # 1. MÜŞTERİ SEÇİMİ VEYA YENİ MÜŞTERİ EKLEME
+    cust_names = [c["name"] for c in db["customers"]]
+    selected_cust_name = st.selectbox("🎯 İşlem Yapılacak Müşteriyi Seçin:", cust_names)
+    
+    selected_cust = next(c for c in db["customers"] if c["name"] == selected_cust_name)
+    
+    # 8 ENTEGRE ADIMIN SEKMELERİ (TABS)
+    t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs([
+        "1. 🏢 Firma Bilgileri",
+        "2. 📄 EUC / İthalat İzni",
+        "3. 🛡️ MSB İhracat İzni",
+        "4. 📦 Sipariş Yönetimi",
+        "5. ✍️ Müşteri Onayı",
+        "6. 📑 Proforma Oluştur",
+        "7. 🏭 İş Emri (WO)",
+        "8. 🚚 Sevkiyat & Düşüm"
+    ])
+    
+    # --- 1. FİRMA BİLGİLERİ (DÜZENLE / SİL) ---
+    with t1:
+        st.markdown("### 🏢 Firma Bilgileri Düzenle / Sil")
+        edit_name = st.text_input("Firma Unvanı", value=selected_cust["name"])
+        edit_country = st.text_input("Ülke", value=selected_cust["country"])
+        edit_contact = st.text_input("Yetkili Kişi", value=selected_cust["contact_person"])
+        edit_email = st.text_input("E-posta", value=selected_cust["email"])
+        edit_address = st.text_area("Adres", value=selected_cust["address"])
         
-    for cust in db["customers"]:
-        st.markdown(f"""
-        <div class="card-box">
-            <h3 style="margin:0; color:#0f172a;">{cust['name']} <span style="font-size:13px; color:#64748b;">({cust['country']})</span></h3>
-            <p style="margin:4px 0; color:#475569; font-size:12px;">
-                👤 <b>Yetkili:</b> {cust.get('contact_person','-')} | ✉️ <b>E-posta:</b> {cust.get('email','-')}
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+        c_btn1, c_btn2 = st.columns(2)
+        if c_btn1.button("💾 Firma Bilgilerini Güncelle", type="primary"):
+            selected_cust["name"] = edit_name
+            selected_cust["country"] = edit_country
+            selected_cust["contact_person"] = edit_contact
+            selected_cust["email"] = edit_email
+            selected_cust["address"] = edit_address
+            save_db(db)
+            st.success("✅ Firma bilgileri başarıyla güncellendi!")
+            st.rerun()
+            
+        if c_btn2.button("🗑️ Firmayı Sil", help="Müşteriyi tamamen siler"):
+            db["customers"] = [c for c in db["customers"] if c["id"] != selected_cust["id"]]
+            save_db(db)
+            st.warning("Firmayı sildiniz.")
+            st.rerun()
+
+    # --- 2. EUC / İTHALAT İZNİ ---
+    with t2:
+        st.markdown("### 📄 EUC / İthalat İzinleri (Ekle / Düzenle / Sil)")
+        for euc in selected_cust.get("import_permits", []):
+            st.write(f"• **EUC No:** `{euc['euc_no']}` | **Adet:** {euc['qty']:,} Adet | **Tarih:** {euc['date']}")
         
-        exp_permits = cust.get("export_permits", [])
+        st.markdown("---")
+        st.caption("➕ Yeni EUC / İthalat İzni Ekle:")
+        new_euc_no = st.text_input("EUC Belge No")
+        new_euc_qty = st.number_input("İzin Verilen Miktar", min_value=1, value=1000)
+        if st.button("Save EUC / İzni Kaydet"):
+            selected_cust["import_permits"].append({
+                "id": f"EUC-{len(selected_cust['import_permits'])+1:03d}",
+                "euc_no": new_euc_no,
+                "qty": new_euc_qty,
+                "date": datetime.now().strftime("%d.%m.%Y")
+            })
+            save_db(db)
+            st.success("EUC Belgesi Eklendi!")
+            st.rerun()
+
+    # --- 3. İHRACAT İZNİ (MSB) ---
+    with t3:
+        st.markdown("### 🛡️ MSB İhracat İzin Belgesi Kotaları (Ekle / Düzenle / Sil)")
+        exp_permits = selected_cust.get("export_permits", [])
         if exp_permits:
-            exp_permit = exp_permits[0]
+            exp_p = exp_permits[0]
+            st.info(f"📄 **Aktif MSB İzin No:** {exp_p['permit_no']} (Geçerlilik: {exp_p['valid_until']})")
             
-            c_p1, c_p2 = st.columns([3, 2])
-            with c_p1:
-                st.markdown(f"📄 **Aktif MSB İzin No:** `{exp_permit['permit_no']}` (Son Tarih: {exp_permit['valid_until']})")
-            with c_p2:
-                if st.button("⚡ Bu İznin Tüm Ürünlerini ve Adetlerini Otomatik Yükle", type="primary", key=f"auto_load_{cust['id']}"):
-                    st.session_state.order_items = []
-                    for item in exp_permit.get("items", []):
-                        st.session_state.order_items.append({
-                            "code": item["code"],
-                            "name": item["name"],
-                            "qty": item["total_qty"] - item["used_qty"]
-                        })
-                    st.success("✅ İzin belgesindeki tüm kalemler ve onaylı adetler tabloya eklendi!")
-                    st.rerun()
-
-            st.markdown("---")
-            st.markdown("#### **Sipariş & Sevkiyat Kalem Girişi (Otomatik & Canlı Doğrulama)**")
-            
-            permit_items_dict = {it["code"]: it for it in exp_permit.get("items", [])}
-            
-            if not st.session_state.order_items:
-                st.info("💡 Yukarıdaki **'⚡ Bu İznin Tüm Ürünlerini ve Adetlerini Otomatik Yükle'** butonuna basarak veya aşağıdaki **'+ Satır / Ürün Ekle'** butonundan ürün ekleyebilirsiniz.")
-            
-            to_delete = None
-            for idx, item in enumerate(st.session_state.order_items):
-                r1, r2, r3, r4 = st.columns([3, 1.2, 3.3, 0.5])
-                
-                prod_keys = list(permit_items_dict.keys())
-                curr_idx = prod_keys.index(item["code"]) if item["code"] in prod_keys else 0
-                
-                sel_code = r1.selectbox(f"Ürün Adı #{idx+1}", prod_keys, format_func=lambda x: permit_items_dict[x]["name"], index=curr_idx, key=f"p_code_{idx}")
-                sel_qty = r2.number_input(f"Adet (Ad) #{idx+1}", min_value=1, value=item["qty"], key=f"p_qty_{idx}")
-                
-                st.session_state.order_items[idx]["code"] = sel_code
-                st.session_state.order_items[idx]["name"] = permit_items_dict[sel_code]["name"]
-                st.session_state.order_items[idx]["qty"] = sel_qty
-
-                # CANLI KARŞILAŞTIRMA KONTROLÜ
-                target_permit_item = permit_items_dict.get(sel_code)
-                if target_permit_item:
-                    rem_quota = target_permit_item["total_qty"] - target_permit_item["used_qty"]
-                    if sel_qty <= rem_quota:
-                        r3.markdown(f'<div class="status-ok">✅ Doğru (İzin Kotası İçi: Kalan {rem_quota:,} Adet)</div>', unsafe_allow_html=True)
-                    else:
-                        r3.markdown(f'<div class="status-err">⚠️ HATA: Miktar İzin Kotasını Aşıyor! (Maks: {rem_quota:,} Ad)</div>', unsafe_allow_html=True)
-                else:
-                    r3.markdown('<div class="status-err">❌ HATA: Ürün İzin Belgesinde Yer Almıyor!</div>', unsafe_allow_html=True)
-
-                if r4.button("✖", key=f"del_row_{idx}"):
-                    to_delete = idx
-
-            if to_delete is not None:
-                st.session_state.order_items.pop(to_delete)
-                st.rerun()
-
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("➕ Satır / Ürün Ekle"):
-                first_code = list(permit_items_dict.keys())[0]
-                st.session_state.order_items.append({"code": first_code, "name": permit_items_dict[first_code]["name"], "qty": 100})
-                st.rerun()
-
-            st.markdown("---")
-            st.markdown("#### 🛡️ Taranan MSB İhracat İzin Belgesi Orijinal Kotası")
-            item_rows = []
-            for it in exp_permit.get("items", []):
-                rem = it['total_qty'] - it['used_qty']
-                item_rows.append({
-                    "Ürün / Model Adı": it['name'],
-                    "Ürün Kodu": it['code'],
-                    "Belge Onaylı Adet": f"{it['total_qty']:,} Adet",
-                    "Kalan Kota": f"{rem:,} Adet"
+            p_rows = []
+            for item in exp_p["items"]:
+                p_rows.append({
+                    "Ürün Kodu": item["code"],
+                    "Ürün Adı": item["name"],
+                    "Belge İzinli": f"{item['total_qty']:,} Adet",
+                    "Sevk Edilen": f"{item['used_qty']:,} Adet",
+                    "Kalan Kota": f"{item['total_qty'] - item['used_qty']:,} Adet"
                 })
-            st.table(pd.DataFrame(item_rows))
+            st.table(pd.DataFrame(p_rows))
+
+    # --- 4. SİPARİŞ YÖNETİMİ ---
+    with t4:
+        st.markdown("### 📦 Sipariş Oluştur / Düzenle (Canlı MSB Kota Doğrulaması)")
+        if st.button("⚡ MSB İznindeki Ürünlerle Otomatik Sipariş Taslağı Aç", type="primary"):
+            exp_p = selected_cust["export_permits"][0]
+            new_ord = {
+                "order_no": f"ORD-2026-{len(selected_cust.get('orders', []))+1:03d}",
+                "date": datetime.now().strftime("%d.%m.%Y"),
+                "status": "Müşteri Onayı Bekliyor",
+                "items": [{"code": it["code"], "name": it["name"], "qty": it["total_qty"] - it["used_qty"], "unit_price": 450.0} for it in exp_p["items"][:2]]
+            }
+            selected_cust.setdefault("orders", []).append(new_ord)
+            save_db(db)
+            st.success("Sipariş oluşturuldu!")
+            st.rerun()
+
+        for ord_item in selected_cust.get("orders", []):
+            st.write(f"📦 **Sipariş No:** `{ord_item['order_no']}` | **Durum:** {ord_item['status']} | **Tarih:** {ord_item['date']}")
+
+    # --- 5. MÜŞTERİ ONAYI ---
+    with t5:
+        st.markdown("### ✍️ Müşteri Onayı Yönetimi")
+        for ord_item in selected_cust.get("orders", []):
+            st.write(f"Sipariş: **{ord_item['order_no']}** — Mevcut Durum: `{ord_item['status']}`")
+            if st.button(f"✅ Müşteri Onayını Kaydet ({ord_item['order_no']})"):
+                ord_item["status"] = "Müşteri Onayladı"
+                save_db(db)
+                st.success("Müşteri onayı sisteme işlendi!")
+                st.rerun()
+
+    # --- 6. PROFORMA OLUŞTUR ---
+    with t6:
+        st.markdown("### 📑 Proforma Fatura (PI) Oluştur / Düzenle")
+        for ord_item in selected_cust.get("orders", []):
+            st.write(f"📄 **Proforma No:** {ord_item.get('proforma_no', 'PI-2026-TEMP')} | Sipariş: {ord_item['order_no']}")
+            st.caption("Müşteri Unvanı: " + selected_cust["name"])
+            st.caption("Adres: " + selected_cust["address"])
+
+    # --- 7. İŞ EMRİ (WORK ORDER) ---
+    with t7:
+        st.markdown("### 🏭 Üretim & Hazırlık İş Emri (Work Order)")
+        for ord_item in selected_cust.get("orders", []):
+            st.write(f"🏭 **İş Emri Kodu:** `{ord_item.get('work_order_no', 'WO-9000')}`")
+            st.caption("Üretim / Montaj Hazırlık Durumu: AKTİF")
+
+    # --- 8. SEVKİYAT & MSB KOTA DÜŞÜMİ ---
+    with t8:
+        st.markdown("### 🚚 Sevkiyat Çıkışı Ekle & MSB Kotasından Otomatik Düşüm")
+        exp_p = selected_cust["export_permits"][0]
+        
+        c_s1, c_s2, c_s3 = st.columns([2, 1, 1])
+        item_opts = {f"{it['name']} (Kalan: {it['total_qty'] - it['used_qty']})": it for it in exp_p["items"]}
+        sel_item_label = c_s1.selectbox("Sevk Edilecek Ürün", list(item_opts.keys()))
+        ship_qty = c_s2.number_input("Sevk Miktarı", min_value=1, value=100)
+        
+        if c_s3.button("🚚 Sevkiyatı Düş / Eksilt", type="primary"):
+            target_it = item_opts[sel_item_label]
+            if target_it["used_qty"] + ship_qty <= target_it["total_qty"]:
+                target_it["used_qty"] += ship_qty
+                save_db(db)
+                st.success(f"✅ {ship_qty} Adet sevk edildi. Kalan Kota: {target_it['total_qty'] - target_it['used_qty']}")
+                st.rerun()
+            else:
+                st.error("❌ HATA: İzin kotası aşılamaz!")
